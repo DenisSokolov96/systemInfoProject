@@ -1,6 +1,8 @@
+import matplotlib.pyplot as plt
+import GPUtil
+
 from psutil import *
 from platform import *
-import matplotlib.pyplot as plt
 from time import sleep, strftime, time
 
 
@@ -89,6 +91,10 @@ def get_memory_percent():
     return virtual_memory().percent
 
 
+def get_memory_used():
+    return get_size(virtual_memory().used)
+
+
 def get_memory():
     svmen = virtual_memory()
     return get_size(svmen.used) + " / " + get_size(svmen.total)
@@ -162,17 +168,26 @@ def sensor_temper_info():
     print(f"* Температура: {sens_temper}")
 
 
-"""
-Для графика
-"""
-# plt.ion()
-# x = []
-# y = []
-# def graph(temp):
-#     y.append(temp)
-#     x.append(time())
-#     plt.clf()
-#     plt.scatter(x, y)
-#     plt.plot(x, y)
-#     plt.draw()
+def gpu_temperature():
+    gpus = GPUtil.getGPUs()
+    strWrite = "\n"
+    strWrite += "*" * 20 + "Информация о видеокарте" + "*" * 20 + "\n"
+    for gpu in gpus:
+        strWrite += f'Видеоадаптер: {gpu.name}' + "\n"
+        strWrite += f'Драйвер: {gpu.driver}' + "\n"
+        strWrite += f'Серия: {gpu.serial}' + "\n"
+        strWrite += f'Максимальный объем памяти: {gpu.memoryTotal}' + "\n"
+        strWrite += f'Используется: {gpu.memoryUsed} Mb' + "\n"
+        strWrite += f'Температура: {gpu.temperature} C' + "\n"
+        strWrite += f'Загрузка: {gpu.load}' + "\n"
+        strWrite += f'Режим отображения: {gpu.display_mode}' + "\n"
+        strWrite += f'Активность дисплея: {gpu.display_active}' + "\n"
+    return strWrite
 
+
+def get_gpu_used():
+    gpus = GPUtil.getGPUs()
+    strWrite = ""
+    for gpu in gpus:
+        strWrite += str(gpu.memoryUsed) + 'Mb'
+    return strWrite

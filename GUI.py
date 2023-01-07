@@ -1,14 +1,14 @@
 import PySimpleGUI as sg
-from ctypes import *
 
+from ctypes import *
 from Core import *
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, FigureCanvasAgg
 from matplotlib.figure import Figure
 
 
 sizeX, sizeY = 0, 0
-xProcessor = []
-yProcessor = []
+xGPU = []
+yGPU = []
 xMem = []
 yMem = []
 
@@ -20,7 +20,7 @@ def main_window():
     sizeX, sizeY = getSizeWindow(90)
     menu_def = [
         ['&Обновление данных', ['&Система', '&Информация о процессоре', '&Информация об ОЗУ', '&Информация о батареи',
-                                '&Информация о ПЗУ', '&Обновить всё']]
+                                '&Информация о ПЗУ', '&Информация о видеоадаптере', '&Обновить всё']]
     ]
     layout_sys_common = [[sg.Output(size=(round(sizeX * 0.04), 9), key='-sys_out_common-')]]
     layout_proc_info = [
@@ -39,30 +39,28 @@ def main_window():
     layout_battery_info = [[sg.Output(size=(round(sizeX * 0.04), 9), key='-battery_info-')]]
     layout_disk_info = [[sg.Output(size=(round(sizeX * 0.04), 16), key='-disk_info-')]]
     layout_net_info = [[sg.Output(size=(round(sizeX * 0.04), 15), key='-net_info-')]]
-    layout_canvas_processor = [[sg.Canvas(size=(round(sizeX * 0.04), 15), key='-CANVAS_PROCES-')]]
+    layout_canvas_gpu = [[sg.Canvas(size=(round(sizeX * 0.04), 15), key='-CANVAS_GPU-')]]
     layout_canvas_memory = [[sg.Canvas(size=(round(sizeX * 0.04), 15), key='-CANVAS_MEM-')]]
+    layout_gpu_info = [[sg.Output(size=(round(sizeX * 0.04), 9), key='-gpu_info-')]]
     layout = [
         [sg.Menu(menu_def)],
         [sg.Frame(layout=layout_sys_common, title='Общая информация о системе',
                   relief=sg.RELIEF_RAISED, tooltip='Система', title_color='Black', background_color='White'),
-         sg.Frame(layout=layout_battery_info,
-                  title='Информация о батареи',
-                  relief=sg.RELIEF_RAISED, tooltip='Питание', title_color='Black', background_color='White')
+         sg.Frame(layout=layout_battery_info, title='Информация о батареи',
+                  relief=sg.RELIEF_RAISED, tooltip='Питание', title_color='Black', background_color='White'),
+         sg.Frame(layout=layout_gpu_info, title='Информация о GPU',
+                  relief=sg.RELIEF_RAISED, tooltip='Видеокарта', title_color='Black', background_color='White')
          ],
-        [sg.Frame(layout=layout_proc_info,
-                  title='Информация о процессоре',
+        [sg.Frame(layout=layout_proc_info, title='Информация о процессоре',
                   relief=sg.RELIEF_RAISED, tooltip='Процессор', title_color='Black', background_color='White'),
-         sg.Frame(layout=layout_disk_info,
-                  title='Информация о дисках хранения данных',
+         sg.Frame(layout=layout_disk_info, title='Информация о дисках хранения данных',
                   relief=sg.RELIEF_RAISED, tooltip='ПЗУ', title_color='Black', background_color='White'),
-         sg.Frame(layout=layout_canvas_processor, title='График загруженности процессора',
+         sg.Frame(layout=layout_canvas_gpu, title='График загруженности процессора',
                   relief=sg.RELIEF_RAISED, tooltip='Процессор', title_color='Black', background_color='White')
          ],
-        [sg.Frame(layout=layout_memory_info,
-                  title='Информация об оперативной памяти',
+        [sg.Frame(layout=layout_memory_info, title='Информация об оперативной памяти',
                   relief=sg.RELIEF_RAISED, tooltip='ОЗУ', title_color='Black', background_color='White'),
-         sg.Frame(layout=layout_net_info,
-                  title='Информация о сети',
+         sg.Frame(layout=layout_net_info, title='Информация о сети',
                   relief=sg.RELIEF_RAISED, tooltip='Сеть', title_color='Black', background_color='White'),
          sg.Frame(layout=layout_canvas_memory, title='График загруженности ОЗУ',
                   relief=sg.RELIEF_RAISED, tooltip='ОЗУ', title_color='Black', background_color='White')
@@ -72,7 +70,7 @@ def main_window():
     window = sg.Window('О компьютере', layout, size=(sizeX, sizeY), resizable=True, finalize=True,
                        grab_anywhere=True, element_justification='center')
     updateAll(window)
-    axProcessor, fig_aggProcessor = createCanvasProces(window)
+    axGPU, fig_aggGPU = createCanvasGPU(window)
     axMem, fig_aggMem = createCanvasMem(window)
 
     while True:
@@ -83,8 +81,8 @@ def main_window():
         processor = processor_info_percen()
         window['-procent_proc-'].update(str(processor) + '%')
         window['-load_proc-'].update_bar(processor)
-        graphProcessor(processor, axProcessor, fig_aggProcessor)
-        graphMem(get_memory_percent(), axMem, fig_aggMem)
+        graphGPU(processor, axGPU, fig_aggGPU)
+        graphMem(get_memory_used(), axMem, fig_aggMem)
         if event == 'Система':
             window['-sys_out_common-'].update(system_info())
         if event == 'Информация о процессоре':
@@ -95,6 +93,8 @@ def main_window():
             window['-disk_info-'].update(disk_info())
         if event == 'Информация о батареи':
             window['-battery_info-'].update(battery())
+        if event == 'Информация о видеоадаптере':
+            window['-gpu_info-'].update(gpu_temperature())
         if event == 'Обновить всё':
             updateAll(window)
 
@@ -125,6 +125,7 @@ def updateAll(window: sg.Window):
     window['-disk_info-'].update(disk_info())
     window['-battery_info-'].update(battery())
     window['-net_info-'].update(net_info())
+    window['-gpu_info-'].update(gpu_temperature())
 
 
 def draw_figure(canvas, figure, loc=(0, 0)):
@@ -134,24 +135,24 @@ def draw_figure(canvas, figure, loc=(0, 0)):
     return figure_canvas_agg
 
 
-def graphProcessor(temp, ax, fig_agg):
-    global xProcessor, yProcessor
-    yProcessor.append(temp)
-    xProcessor.append(time())
-    if len(xProcessor) > 40:
-        xProcessor = xProcessor[1:]
-        yProcessor = yProcessor[1:]
+def graphGPU(temp, ax, fig_agg):
+    global xGPU, yGPU
+    yGPU.append(temp)
+    xGPU.append(time())
+    if len(xGPU) > 40:
+        xGPU = xGPU[1:]
+        yGPU = yGPU[1:]
         ax.cla()
-    ax.plot(xProcessor, yProcessor, color='purple')
+    ax.plot(xGPU, yGPU, color='purple')
     fig_agg.draw()
 
 
-def createCanvasProces(window: sg.Window):
-    canvas_elem = window['-CANVAS_PROCES-']
+def createCanvasGPU(window: sg.Window):
+    canvas_elem = window['-CANVAS_GPU-']
     canvasProces = canvas_elem.TKCanvas
 
     # draw the initial plot in the window
-    fig = Figure(figsize=(sizeX * 0.0035, sizeY * 0.0032))
+    fig = Figure(figsize=(sizeX * 0.003, sizeY * 0.0032))
     ax = fig.add_subplot()
     ax.grid(True)
     fig_agg = draw_figure(canvasProces, fig)
@@ -162,7 +163,7 @@ def createCanvasMem(window: sg.Window):
     canvas_elem = window['-CANVAS_MEM-']
     canvasMem = canvas_elem.TKCanvas
     # draw the initial plot in the window
-    fig = Figure(figsize=(sizeX * 0.0035, sizeY * 0.003))
+    fig = Figure(figsize=(sizeX * 0.003, sizeY * 0.003))
     ax = fig.add_subplot()
     ax.grid(True)
     fig_agg = draw_figure(canvasMem, fig)
