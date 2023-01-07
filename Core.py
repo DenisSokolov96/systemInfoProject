@@ -23,7 +23,7 @@ def secs_2_hours(secs):
 def battery():
     res = sensors_battery()
     strWrite = "\n"
-    strWrite += "*" * 25 + "Информация о батареи" + "*" * 25 + "\n"
+    strWrite += "*" * 20 + "Информация о батареи" + "*" * 20 + "\n"
     try:
         strWrite += "* Уровень заряда: %s%%" % res.percent + "\n"
         strWrite += "* Время до разряда батареи: %s" % secs_2_hours(res.secsleft) + "\n"
@@ -36,7 +36,7 @@ def battery():
 
 def system_info():
     strWrite = "\n"
-    strWrite += "*" * 25 + "Системная информация" + "*" * 25 + "\n"
+    strWrite += "*" * 20 + "Системная информация" + "*" * 20 + "\n"
     data = uname()
     strWrite += f"* Система: {data.system}\n"
     strWrite += f"* Имя узла: {data.node}\n"
@@ -49,7 +49,7 @@ def system_info():
 
 def processor_info():
     strWrite = "\n"
-    strWrite += "*" * 23 + "Информация о процессоре" + "*" * 23 + "\n"
+    strWrite += "*" * 20 + "Информация о процессоре" + "*" * 20 + "\n"
     strWrite += f"* Физические ядра:  {cpu_count(logical=False)}" + "\n"
     strWrite += f"* Всего ядер:  {cpu_count(logical=True)}" + "\n"
     cpufreq = cpu_freq()
@@ -61,6 +61,10 @@ def processor_info():
         strWrite += " " * 5 + f"Ядро {i+1}: {percentage}%" + "\n"
     strWrite += f"* Общая загруженность процессора: {cpu_percent()}%" + "\n"
     return strWrite
+
+
+def processor_info_percen():
+    return cpu_percent(0)
 
 
 def memory_info():
@@ -81,8 +85,13 @@ def memory_info():
     return strWrite
 
 
-def get_memory():
+def get_memory_percent():
     return virtual_memory().percent
+
+
+def get_memory():
+    svmen = virtual_memory()
+    return get_size(svmen.used) + " / " + get_size(svmen.total)
 
 
 def disk_info():
@@ -105,7 +114,7 @@ def disk_info():
 
 def net_info():
     strWrite = "\n"
-    strWrite += "*" * 25 + "Информация о сети" + "*" * 25 + "\n"
+    strWrite += "*" * 20 + "Информация о сети" + "*" * 20 + "\n"
     if_addrs = net_if_addrs()
     for interface_name, interface_addresses in if_addrs.items():
         for address in interface_addresses:
